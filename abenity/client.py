@@ -104,7 +104,7 @@ class Abenity(object):
     def _sign_message(self, payload_encrypted_base64_urlencoded, private_key):
         key = RSA.importKey(private_key)
         signer = Signature.PKCS1_v1_5.new(key)
-        payload = urldecode(payload_encrypted_base64_urlencoded[:-2])
+        payload = urldecode(payload_encrypted_base64_urlencoded[:-6])
         md5_hash = MD5.new(payload)
         signature = signer.sign(md5_hash)
         signature_base64 = b64encode(signature_base64)
