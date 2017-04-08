@@ -5,7 +5,7 @@ from Crypto.Cipher import DES3
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.Hash import MD5
 from Crypto.PublicKey import RSA
-from Crypto import Signature.PKCS1_v1_5
+from Crypto.Signature import PKCS1_v1_5 as PKCS1_v1_5_Signature
 
 import random
 import string
@@ -18,20 +18,20 @@ is_py2 = (version == 2)
 is_py3 = (version == 3)
 
 if is_py2:
-    from urllib import urlencode
-    from urllib import urldecode
+    from urllib import quote_plus
+    from urllib import unquote_plus
 elif is_py3:
-    from urllib.parse import urlencode
-    from urllib.parse import urldecode
+    from urllib.parse import quote_plus
+    from urllib.parse import unquote_plus
 else:
-    raise ImportError("urllib's urlencode or urldecode cannot be imported!")
+    raise ImportError("urllib quote_plus or unquote_plus cannot be imported!")
 
 
 class Abenity(object):
     """
     Abenity API client
     """
-    iv_size = 8  # initilization vector size
+    iv_size = 8  # initialization vector size
     des3_key_size = 24
 
     def __init__(self, username, password, api_key, version=2,
@@ -57,31 +57,33 @@ class Abenity(object):
             self._api_url = 'https://sandbox.abenity.com'
         self._timeout = timeout
 
-        self._public_key = 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC8NVUZUtr2I'+
-        'HiFoY8s/qFGmZOIewAvgS4FMXWZ81Qc8lkAlZr9e171xn4PgKr+S7YsfCt+1XKyo5Xmr'+
-        'JyaNUe/aRptB93NFn6RoFzExgfpkooxcHpWcPy+Hb5e0rwPDBA6zfyrYRj8uK/1HleFE'+
-        'r4v8u/HbnJmiFoNJ2hfZXn6Qw== phpseclib-generated-key'
+        self._public_key = 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC8NVUZUt' + \
+                           'r2IHiFoY8s/qFGmZOIewAvgS4FMXWZ81Qc8lkAlZr9e171' + \
+                           'xn4PgKr+S7YsfCt+1XKyo5XmrJyaNUe/aRptB93NFn6RoF' + \
+                           'zExgfpkooxcHpWcPy+Hb5e0rwPDBA6zfyrYRj8uK/1HleF' + \
+                           'Er4v8u/HbnJmiFoNJ2hfZXn6Qw== ' + \
+                           'phpseclib-generated-key'
 
-        self._triple_des_key = random = ''.join([
+        self._triple_des_key = ''.join([
             random.choice(string.ascii_letters + string.digits)
             for n in range(self.des3_key_size)
             ])
 
     def _send_request(self, http_method='GET', data={}):
-        params = dict('api_username': self.api_username,
-                      'api_password': self.api_password,
-                      'api_key': self.api_key,
-                      data.items())
+        params = {'api_username': self._api_username,
+                  'api_password': self._api_password,
+                  'api_key': self._api_key}
+        params.update(data.items())
 
         api_url = self._api_url+'/v'+self._version+'/client'+http_method
         headers = {'user-agent': 'abenity/abenity-php v2)'}
         response = {}
 
         if http_method == 'GET':
-            response = requests.get(api_url, verify=False, headers=headers
+            response = requests.get(api_url, verify=False, headers=headers,
                                     params=params, timeout=self._timeout)
         elif http_method == 'POST':
-            response = requests.post(api_url, verify=False, headers=headers
+            response = requests.post(api_url, verify=False, headers=headers,
                                      params=params, timeout=self._timeout)
 
         return json.loads(response.text)
@@ -92,23 +94,23 @@ class Abenity(object):
                           IV=iv)
         payload_encrypted = cipher.encrypt(payload)
         payload_encrypted_base64 = b64encode(payload_encrypted)
-        return urlencode(payload_encrypted_base64) + "decode"
+        return quote_plus(payload_encrypted_base64) + "decode"
 
     def _encrypt_cipher(self):
         key = RSA.importKey(self._public_key)
         cipher = PKCS1_v1_5.new(key)
         triple_des_key_encrypted = cipher.encrypt(self._triple_des_key)
         triple_des_key_encrypted_base64 = b64encode(triple_des_key_encrypted)
-        return urlencode(triple_des_key_encrypted_base64) + "decode"
+        return quote_plus(triple_des_key_encrypted_base64) + "decode"
 
     def _sign_message(self, payload_encrypted_base64_urlencoded, private_key):
         key = RSA.importKey(private_key)
-        signer = Signature.PKCS1_v1_5.new(key)
-        payload = urldecode(payload_encrypted_base64_urlencoded[:-6])
+        signer = PKCS1_v1_5_Signature.new(key)
+        payload = unquote_plus(payload_encrypted_base64_urlencoded[:-6])
         md5_hash = MD5.new(payload)
         signature = signer.sign(md5_hash)
         signature_base64 = b64encode(signature_base64)
-        return urlencode(signature_base64) + "decode"
+        return quote_plus(signature_base64) + "decode"
 
     def sso_member(self, member_profile, private_key):
         """
@@ -121,7 +123,7 @@ class Abenity(object):
         Returns:
             The raw API response string
         """
-        payload = urlencode(member_profile)
+        payload = quote_plus(member_profile)
 
         # Create initialization vector
         initialization_vector = Crypto.Random.new().read(self.iv_size)
