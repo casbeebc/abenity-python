@@ -89,7 +89,7 @@ class Abenity(object):
                                     params=params, timeout=self._timeout)
         elif http_method == 'POST':
             response = requests.post(api_url, verify=False, headers=headers,
-                                     params=params, timeout=self._timeout)
+                                     data=params, timeout=self._timeout)
 
         return json.loads(response.text)
 
