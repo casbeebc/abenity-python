@@ -20,9 +20,11 @@ is_py3 = (version == 3)
 if is_py2:
     from urllib import quote_plus
     from urllib import unquote_plus
+    from urllib import urlencode
 elif is_py3:
     from urllib.parse import quote_plus
     from urllib.parse import unquote_plus
+    from urllib.parse import urlencode
 else:
     raise ImportError("urllib quote_plus or unquote_plus cannot be imported!")
 
@@ -92,16 +94,21 @@ class Abenity(object):
         cipher = DES3.new(self._triple_des_key,
                           DES3.MODE_CBC,
                           IV=iv)
-        payload_encrypted = cipher.encrypt(payload)
-        payload_encrypted_base64 = b64encode(payload_encrypted)
+
+        # If the size of the data is not n * blocksize,
+        # the data will be padded with '\0'.
+        payload_padded = '\0' * (8 - len(payload) % 8)
+
+        payload_encrypted = cipher.encrypt(payload_padded)
+        payload_encrypted_base64 = b64encode(payload_encrypted).decode("utf-8")
         return quote_plus(payload_encrypted_base64) + "decode"
 
     def _encrypt_cipher(self):
         key = RSA.importKey(self._public_key)
         cipher = PKCS1_v1_5.new(key)
-        triple_des_key_encrypted = cipher.encrypt(self._triple_des_key)
-        triple_des_key_encrypted_base64 = b64encode(triple_des_key_encrypted)
-        return quote_plus(triple_des_key_encrypted_base64) + "decode"
+        des3_key_encrypted = cipher.encrypt(self._triple_des_key)
+        des3_key_enc_base64 = b64encode(des3_key_encrypted).decode("utf-8")
+        return quote_plus(des3_key_enc_base64) + "decode"
 
     def _sign_message(self, payload_encrypted_base64_urlencoded, private_key):
         key = RSA.importKey(private_key)
@@ -109,7 +116,7 @@ class Abenity(object):
         payload = unquote_plus(payload_encrypted_base64_urlencoded[:-6])
         md5_hash = MD5.new(payload)
         signature = signer.sign(md5_hash)
-        signature_base64 = b64encode(signature_base64)
+        signature_base64 = b64encode(signature_base64).decode("utf-8")
         return quote_plus(signature_base64) + "decode"
 
     def sso_member(self, member_profile, private_key):
@@ -123,13 +130,13 @@ class Abenity(object):
         Returns:
             The raw API response string
         """
-        payload = quote_plus(member_profile)
+        payload = urlencode(member_profile)
 
-        # Create initialization vector
-        initialization_vector = Crypto.Random.new().read(self.iv_size)
-        iv_urlencoded = b64encode(initialization_vector)+"decode"
+        # Create initialization vector (iv)
+        init_vector = Random.new().read(self.iv_size)
+        iv_urlencoded = b64encode(init_vector).decode("utf-8") + "decode"
 
-        payload_encrypted = self._encrypt_payload(payload, iv_urlencoded)
+        payload_encrypted = self._encrypt_payload(payload, init_vector)
         encrypted_inner_key = self._encrypt_cipher()
         signature = self._sign_message(payload_encrypted, private_key)
 
