@@ -10,6 +10,7 @@ from Crypto.Signature import PKCS1_v1_5 as PKCS1_v1_5_Signature
 import random
 import string
 import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 import json
 import sys
 
@@ -27,6 +28,8 @@ elif is_py3:
     from urllib.parse import urlencode
 else:
     raise ImportError("urllib quote_plus or unquote_plus cannot be imported!")
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 class Abenity(object):
@@ -71,13 +74,13 @@ class Abenity(object):
             for n in range(self.des3_key_size)
             ])
 
-    def _send_request(self, http_method='GET', data={}):
-        params = {'api_username': self._api_username,
-                  'api_password': self._api_password,
+    def _send_request(self, api_method, http_method='GET', data={}):
+        params = {'api_username': self._username,
+                  'api_password': self._password,
                   'api_key': self._api_key}
         params.update(data.items())
 
-        api_url = self._api_url+'/v'+self._version+'/client'+http_method
+        api_url = self._api_url+'/v'+str(self._version)+'/client'+api_method
         headers = {'user-agent': 'abenity/abenity-php v2)'}
         response = {}
 
@@ -97,7 +100,8 @@ class Abenity(object):
 
         # If the size of the data is not n * blocksize,
         # the data will be padded with '\0'.
-        payload_padded = '\0' * (8 - len(payload) % 8)
+        padding = '\0' * (self.iv_size - len(payload) % self.iv_size)
+        payload_padded = payload + padding
 
         payload_encrypted = cipher.encrypt(payload_padded)
         payload_encrypted_base64 = b64encode(payload_encrypted).decode("utf-8")
@@ -106,7 +110,8 @@ class Abenity(object):
     def _encrypt_cipher(self):
         key = RSA.importKey(self._public_key)
         cipher = PKCS1_v1_5.new(key)
-        des3_key_encrypted = cipher.encrypt(self._triple_des_key)
+        des3_key_encrypted = cipher.encrypt(bytearray(self._triple_des_key,
+                                                      "utf-8"))
         des3_key_enc_base64 = b64encode(des3_key_encrypted).decode("utf-8")
         return quote_plus(des3_key_enc_base64) + "decode"
 
@@ -114,9 +119,9 @@ class Abenity(object):
         key = RSA.importKey(private_key)
         signer = PKCS1_v1_5_Signature.new(key)
         payload = unquote_plus(payload_encrypted_base64_urlencoded[:-6])
-        md5_hash = MD5.new(payload)
+        md5_hash = MD5.new(payload.encode("utf-8"))
         signature = signer.sign(md5_hash)
-        signature_base64 = b64encode(signature_base64).decode("utf-8")
+        signature_base64 = b64encode(signature).decode("utf-8")
         return quote_plus(signature_base64) + "decode"
 
     def sso_member(self, member_profile, private_key):
@@ -143,7 +148,7 @@ class Abenity(object):
         request_data = {
                         'Payload': payload_encrypted,
                         'Cipher': encrypted_inner_key,
-                        'Signature': singature,
+                        'Signature': signature,
                         'Iv': iv_urlencoded
                         }
         return self._send_request('/sso_member.json', 'POST', request_data)
