@@ -27,7 +27,7 @@ elif is_py3:
     from urllib.parse import unquote_plus
     from urllib.parse import urlencode
 else:
-    raise ImportError("urllib quote_plus or unquote_plus cannot be imported!")
+    raise ImportError("urllib, quote_plus or unquote_plus cannot be imported!")
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -62,17 +62,26 @@ class Abenity(object):
             self._api_url = 'https://sandbox.abenity.com'
         self._timeout = timeout
 
-        self._public_key = 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC8NVUZUt' + \
-                           'r2IHiFoY8s/qFGmZOIewAvgS4FMXWZ81Qc8lkAlZr9e171' + \
-                           'xn4PgKr+S7YsfCt+1XKyo5XmrJyaNUe/aRptB93NFn6RoF' + \
-                           'zExgfpkooxcHpWcPy+Hb5e0rwPDBA6zfyrYRj8uK/1HleF' + \
-                           'Er4v8u/HbnJmiFoNJ2hfZXn6Qw== ' + \
-                           'phpseclib-generated-key'
+        self._public_key = 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC8NVUZU' + \
+                           'tr2IHiFoY8s/qFGmZOIewAvgS4FMXWZ81Qc8lkAlZr9e1' + \
+                           '71xn4PgKr+S7YsfCt+1XKyo5XmrJyaNUe/aRptB93NFn6' + \
+                           'RoFzExgfpkooxcHpWcPy+Hb5e0rwPDBA6zfyrYRj8uK/1' + \
+                           'HleFEr4v8u/HbnJmiFoNJ2hfZXn6Qw== phpseclib-ge' + \
+                           'nerated-key'
 
         self._triple_des_key = ''.join([
             random.choice(string.ascii_letters + string.digits)
             for n in range(self.des3_key_size)
             ])
+
+    def set_triple_des_key(self, key=None):
+        if key is None:
+            self._triple_des_key = ''.join([
+                random.choice(string.ascii_letters + string.digits)
+                for n in range(self.des3_key_size)
+                ])
+        else:
+            self._triple_des_key = key
 
     def _send_request(self, api_method, http_method='GET', data={}):
         params = {'api_username': self._username,
@@ -110,10 +119,12 @@ class Abenity(object):
     def _encrypt_cipher(self):
         key = RSA.importKey(self._public_key)
         cipher = PKCS1_v1_5.new(key)
-        des3_key_encrypted = cipher.encrypt(bytearray(self._triple_des_key,
-                                                      "utf-8"))
-        des3_key_enc_base64 = b64encode(des3_key_encrypted).decode("utf-8")
-        return quote_plus(des3_key_enc_base64) + "decode"
+        des3_key_encrypted = cipher.encrypt(bytes(self._triple_des_key,
+                                                  'utf-8'))
+        des3_key_enc_base64 = b64encode(des3_key_encrypted).decode('utf-8')
+        des3_key_enc_base64_encoded = quote_plus(des3_key_enc_base64) + \
+            "decode"
+        return des3_key_enc_base64_encoded
 
     def _sign_message(self, payload_encrypted_base64_urlencoded, private_key):
         key = RSA.importKey(private_key)
@@ -124,7 +135,7 @@ class Abenity(object):
         signature_base64 = b64encode(signature).decode("utf-8")
         return quote_plus(signature_base64) + "decode"
 
-    def sso_member(self, member_profile, private_key):
+    def sso_member(self, member_profile, private_key, init_vector=None):
         """
         Single Sign-On a member
 
@@ -135,20 +146,24 @@ class Abenity(object):
         Returns:
             The raw API response string
         """
+
         payload = urlencode(member_profile)
 
         # Create initialization vector (iv)
-        init_vector = Random.new().read(self.iv_size)
-        iv_urlencoded = b64encode(init_vector).decode("utf-8") + "decode"
+        if init_vector is None:
+            init_vector = Random.get_random_bytes(self.iv_size)
+
+        iv_urlencoded = quote_plus(b64encode(init_vector).decode("utf-8")) + \
+            "decode"
 
         payload_encrypted = self._encrypt_payload(payload, init_vector)
         encrypted_inner_key = self._encrypt_cipher()
         signature = self._sign_message(payload_encrypted, private_key)
 
         request_data = {
-                        'Payload': payload_encrypted,
-                        'Cipher': encrypted_inner_key,
-                        'Signature': signature,
-                        'Iv': iv_urlencoded
+                        'Payload': unquote_plus(payload_encrypted),
+                        'Cipher': unquote_plus(encrypted_inner_key),
+                        'Signature': unquote_plus(signature),
+                        'Iv': unquote_plus(iv_urlencoded)
                         }
         return self._send_request('/sso_member.json', 'POST', request_data)
