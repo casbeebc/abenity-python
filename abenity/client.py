@@ -116,18 +116,26 @@ class Abenity(object):
         payload_encrypted_base64 = b64encode(payload_encrypted).decode("utf-8")
         return quote_plus(payload_encrypted_base64) + "decode"
 
+    def _generate_rsa_key(self, key):
+        return RSA.importKey(key)
+
     def _encrypt_cipher(self):
-        key = RSA.importKey(self._public_key)
+        key = self._generate_rsa_key(self._public_key)
         cipher = PKCS1_v1_5.new(key)
-        des3_key_encrypted = cipher.encrypt(bytes(self._triple_des_key,
-                                                  'utf-8'))
+
+        try:
+            des3_key_bytes = bytes(self._triple_des_key)
+        except TypeError:
+            des3_key_bytes = bytes(self._triple_des_key, 'utf-8')  # Python 3
+
+        des3_key_encrypted = cipher.encrypt(des3_key_bytes)
         des3_key_enc_base64 = b64encode(des3_key_encrypted).decode('utf-8')
         des3_key_enc_base64_encoded = quote_plus(des3_key_enc_base64) + \
             "decode"
         return des3_key_enc_base64_encoded
 
     def _sign_message(self, payload_encrypted_base64_urlencoded, private_key):
-        key = RSA.importKey(private_key)
+        key = self._generate_rsa_key(private_key)
         signer = PKCS1_v1_5_Signature.new(key)
         payload = unquote_plus(payload_encrypted_base64_urlencoded[:-6])
         md5_hash = MD5.new(payload.encode("utf-8"))

@@ -1,4 +1,3 @@
 flake8>=3.3.0  # MIT
 mock>=2.0  # BSD
-pytest #MIT
-pycodestyle==1.5.7  # MIT
+pycodestyle==2.3.1  # MIT
