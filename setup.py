@@ -39,7 +39,7 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     setup_requires=['setuptools>=17.1'],
-    install_requires=['requests==2.13.0', 'pycrypto==2.6.1'],
+    install_requires=['requests==2.13.0', 'pycryptodome==3.4.5'],
     extras_require={'testing': ['pytest']},
     tests_require=['pytest'],
 )

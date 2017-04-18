@@ -63,24 +63,18 @@ class TestClass:
         #       an easy function to make it not random, that I can see.
         assert payload_encrypted is not None
 
-    def test_encrypt_cipher(self, monkeypatch):
+    def test_encrypt_cipher(self):
         self.abenity.set_triple_des_key('IoAZqZ3RCezxj7eKWeKj00mT')
 
         # remove RSA randomness, so can test
-        def mockreturn(key=None):
-            keyObj = RSA.importKey(key)
+        def newRand(obj=None):
+            return bytes('a')
 
-            def newRand(obj=None):
-                return 'abc'
-            keyObj._randfunc = newRand
-            return keyObj
-        monkeypatch.setattr(self.abenity, '_generate_rsa_key', mockreturn)
-
-        cipher = self.abenity._encrypt_cipher()
-        assert cipher == 'CNRaLJvGDlc2qlDrXxNaMk1jxub9FNtzS0h7lSm0BxHuCMlX' + \
-            'jUMB9QqY%2B9mzxkp686qVPV1SSjntJYx8x4rPlo28koCTP6VaaB5JwZq3gMr' + \
-            'y9unYl%2BFsR6M8hIUkoOE6RLVaT0WprCRFaLUYarEj7ku2MN5OLcqvXPg1iB' + \
-            'feoYE%3Ddecode'
+        cipher = self.abenity._encrypt_cipher(rand_function=newRand)
+        assert cipher == 'vDUtFs8K8pvy0db7D1EXTrUkWv5PTeldb77BBXpQN7SM521b' + \
+            'INUcgbDbNc5Cn66ukeSNykeYPSAA4fzX3CGb1fuuO5stE19FP8cabJZFQL2GL' + \
+            '6UrWu%2FAz6tAx06hl4R9CUSLu0ZQPwweW%2BrLKeFluvnlHIMsdzdmiybeuS' + \
+            'UhucE%3Ddecode'
 
     def test_sign_message(self, monkeypatch):
         self.abenity.set_triple_des_key('IoAZqZ3RCezxj7eKWeKj00mT')
@@ -90,7 +84,7 @@ class TestClass:
             keyObj = RSA.importKey(key)
 
             def newRand(obj=None):
-                return 'abc'
+                return bytes('abc')
             keyObj._randfunc = newRand
             return keyObj
 

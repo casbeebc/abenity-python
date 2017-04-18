@@ -119,9 +119,12 @@ class Abenity(object):
     def _generate_rsa_key(self, key):
         return RSA.importKey(key)
 
-    def _encrypt_cipher(self):
+    def _encrypt_cipher(self, rand_function=None):
         key = self._generate_rsa_key(self._public_key)
-        cipher = PKCS1_v1_5.new(key)
+        if rand_function is None:
+            cipher = PKCS1_v1_5.new(key)
+        else:
+            cipher = PKCS1_v1_5.new(key, randfunc=rand_function)
 
         try:
             des3_key_bytes = bytes(self._triple_des_key)
