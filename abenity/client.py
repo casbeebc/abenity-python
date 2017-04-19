@@ -12,6 +12,7 @@ import string
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 import json
+import six
 import sys
 
 version = sys.version_info[0]
@@ -103,7 +104,7 @@ class Abenity(object):
         return json.loads(response.text)
 
     def _encrypt_payload(self, payload, iv):
-        cipher = DES3.new(self._triple_des_key,
+        cipher = DES3.new(six.b(self._triple_des_key),
                           DES3.MODE_CBC,
                           IV=iv)
 
@@ -112,7 +113,7 @@ class Abenity(object):
         padding = '\0' * (self.iv_size - len(payload) % self.iv_size)
         payload_padded = payload + padding
 
-        payload_encrypted = cipher.encrypt(payload_padded)
+        payload_encrypted = cipher.encrypt(six.b(payload_padded))
         payload_encrypted_base64 = b64encode(payload_encrypted).decode("utf-8")
         return quote_plus(payload_encrypted_base64) + "decode"
 
@@ -126,10 +127,7 @@ class Abenity(object):
         else:
             cipher = PKCS1_v1_5.new(key, randfunc=rand_function)
 
-        try:
-            des3_key_bytes = bytes(self._triple_des_key)
-        except TypeError:
-            des3_key_bytes = bytes(self._triple_des_key, 'utf-8')  # Python 3
+        des3_key_bytes = six.b(self._triple_des_key)
 
         des3_key_encrypted = cipher.encrypt(des3_key_bytes)
         des3_key_enc_base64 = b64encode(des3_key_encrypted).decode('utf-8')

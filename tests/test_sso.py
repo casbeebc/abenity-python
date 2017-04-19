@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from abenity.client import Abenity
 from base64 import b64encode
 from Crypto.Cipher import PKCS1_v1_5
@@ -7,6 +9,7 @@ import pprint
 import binascii
 from random import randint
 import pytest
+import six
 import sys
 
 version = sys.version_info[0]
@@ -68,7 +71,7 @@ class TestClass:
 
         # remove RSA randomness, so can test
         def newRand(obj=None):
-            return bytes('a')
+            return six.b('a')
 
         cipher = self.abenity._encrypt_cipher(rand_function=newRand)
         assert cipher == 'vDUtFs8K8pvy0db7D1EXTrUkWv5PTeldb77BBXpQN7SM521b' + \
@@ -84,7 +87,7 @@ class TestClass:
             keyObj = RSA.importKey(key)
 
             def newRand(obj=None):
-                return bytes('abc')
+                return six.b('abc')
             keyObj._randfunc = newRand
             return keyObj
 
