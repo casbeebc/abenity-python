@@ -20,13 +20,12 @@ class PyTest(TestCommand):
 setup(
     name='abenity',
     packages=['abenity'],
-    version='0.0.6',
+    version='0.0.7',
 
     description='Abenity API client',
     long_description='A Python library for using the Abenity API.',
-    url='https://github.com/casbeebc/abenity-python',
-    author='Brett Casbeer',
-    author_email='brett.casbeer@gmail.com',
+    url='https://github.com/abenity/abenity-python',
+    author='Abenity',
     license='MIT',
     cmdclass={'test': PyTest},
     classifiers=[
