@@ -99,6 +99,9 @@ class Abenity(object):
         elif http_method == 'POST':
             response = requests.post(api_url, verify=False, headers=headers,
                                      data=params, timeout=self._timeout)
+        elif http_method == 'DELETE':
+            response = requests.delete(api_url, verify=False, headers=headers,
+                                     data=params, timeout=self._timeout)
 
         return json.loads(response.text)
 
