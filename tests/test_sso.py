@@ -36,7 +36,7 @@ class TestClass:
     f = open('private-key-test.txt', 'r')
     abenity_your_private_key = f.read()
 
-    member_profile = {'creation_time': '2017-04-10T18:51:23.053883',
+    member_profile = {'creation_time': datetime.datetime.utcnow().isoformat() + 'Z',
                       'salt': 10000,
                       'send_welcome_email': 1,
                       'client_user_id': '1',
