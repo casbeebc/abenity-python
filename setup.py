@@ -41,7 +41,7 @@ setup(
     setup_requires=['setuptools>=17.1'],
     install_requires=[
         'requests>=2.31.0',
-        'pycryptodome==3.19.0',
+        'pycryptodome==3.19.1',
         'six==1.16.0'
     ],
     extras_require={'testing': ['pytest']},
