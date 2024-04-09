@@ -89,3 +89,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+sso_member.py
+private-key-test.pem
