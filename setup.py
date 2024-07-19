@@ -20,7 +20,7 @@ class PyTest(TestCommand):
 setup(
     name='abenity',
     packages=['abenity'],
-    version='1.4.0',
+    version='1.5.0',
 
     description='Abenity API client',
     long_description='A Python library for using the Abenity API.',
@@ -40,7 +40,7 @@ setup(
     ],
     setup_requires=['setuptools>=17.1'],
     install_requires=[
-        'requests>=2.31.0',
+        'requests>=2.32.3',
         'pycryptodome==3.20',
         'six==1.16.0'
     ],
